@@ -2,6 +2,9 @@
 name: lateral-move-ssh
 description: 利用已收集的 SSH 私钥或密码凭据，尝试横向移动到内网其他主机。当发现 SSH 私钥、SSH 密码或内网存活主机开放 22 端口时使用。
 enabled: true
+tags:
+  - lateral-movement
+  - linux
 ---
 
 # SSH 横向移动

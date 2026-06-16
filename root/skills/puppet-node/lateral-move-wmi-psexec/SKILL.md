@@ -1,6 +1,9 @@
 ---
 name: lateral-move-wmi-psexec
 description: 利用已获取的 Windows 凭据（明文密码、NTLM Hash）通过 WMI、PsExec、WinRM 等协议横向移动到内网 Windows 主机。当目标环境为 Windows 域或工作组且已获取有效凭据时使用。
+tags:
+  - lateral-movement
+  - windows
 ---
 
 # Windows 横向移动（WMI / PsExec / WinRM）

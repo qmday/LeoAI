@@ -2,6 +2,11 @@
 name: recon-internal-network
 description: 对目标机器所在内网进行系统性探测，包括网段枚举、存活主机扫描、开放端口探测和 HTTP 服务指纹识别。当任务涉及内网探测、横向移动准备、网段扫描、C段扫描时使用。
 enabled: true
+tags:
+  - recon
+  - network
+  - linux
+  - windows
 ---
 
 # 内网探测

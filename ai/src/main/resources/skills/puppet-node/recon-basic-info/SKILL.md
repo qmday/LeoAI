@@ -2,6 +2,10 @@
 name: recon-basic-info
 description: 对目标主机执行初始基础信息侦察，第一步完成主机与权限确认，判断当前 WebShell 所在系统、运行用户、应用权限、网络位置、容器状态、出网限制和服务器业务角色，并将发现自动保存为会话侦察摘要。这是进入新目标后的第一步标准操作。
 enabled: true
+tags:
+  - recon
+  - linux
+  - windows
 ---
 
 # 初始基础信息侦察

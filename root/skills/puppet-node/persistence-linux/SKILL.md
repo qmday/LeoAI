@@ -1,6 +1,9 @@
 ---
 name: persistence-linux
 description: 在 Linux 目标上建立持久化后门，包括 cron 任务、systemd 服务、SSH authorized_keys、~/.bashrc 注入、SUID 后门等方式。当任务涉及 Linux 持久化、后门植入、维持访问、cron 后门时使用。执行前必须获得用户明确确认。
+tags:
+  - persistence
+  - linux
 ---
 
 # Linux 持久化

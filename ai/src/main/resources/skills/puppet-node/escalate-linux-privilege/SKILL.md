@@ -2,6 +2,9 @@
 name: escalate-linux-privilege
 description: 在 Linux 目标上系统性地检测权限提升路径，包括 SUID/SGID 文件、sudo 配置、可写的 cron 脚本、内核版本漏洞、NFS 错误配置、PATH 劫持等。当任务涉及 Linux 提权、SUID、sudo 滥用、内核漏洞时使用。
 enabled: true
+tags:
+  - privilege-escalation
+  - linux
 ---
 
 # Linux 权限提升路径检测

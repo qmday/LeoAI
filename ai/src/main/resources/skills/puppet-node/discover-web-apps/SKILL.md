@@ -2,6 +2,11 @@
 name: discover-web-apps
 description: 发现目标主机上部署的 Web 应用，识别 Tomcat、Spring Boot、Nginx、PHP 等常见 Web 容器和框架的部署路径、监听端口和应用列表。当任务涉及找到 webroot、war 包、部署目录、Web 应用入口、Tomcat webapps 或识别目标是什么 Web 框架时使用。
 enabled: true
+tags:
+  - recon
+  - web
+  - linux
+  - windows
 ---
 
 # Web 应用部署发现

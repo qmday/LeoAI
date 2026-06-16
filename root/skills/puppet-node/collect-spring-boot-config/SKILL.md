@@ -1,6 +1,10 @@
 ---
 name: collect-spring-boot-config
 description: 收集 Spring Boot 应用的配置来源，包括外部配置文件、启动参数、环境变量、classpath 资源和 fat jar 内部资源。当任务涉及 application.yml、bootstrap.yml、spring.profiles.active、spring.config.location、fat jar 配置读取或 Spring Boot 配置覆盖关系时使用。
+tags:
+  - credential
+  - java
+  - spring
 ---
 
 # 收集 Spring Boot 配置

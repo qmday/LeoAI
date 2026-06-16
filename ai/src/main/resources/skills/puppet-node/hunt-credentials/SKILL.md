@@ -2,6 +2,10 @@
 name: hunt-credentials
 description: 在目标主机的环境变量、进程启动参数、配置文件和常见凭据存放路径中猎取账号密码、Token、密钥等敏感信息。覆盖 JDBC 数据库、Redis、Nacos、Shiro Key、SSH、云凭据等所有场景。当任务涉及凭据搜集、密钥提取、数据库密码、Redis 密码、Nacos 配置、Shiro Key、API Token、云凭据或服务账号时使用。
 enabled: true
+tags:
+  - credential
+  - linux
+  - windows
 ---
 
 # 凭据猎取

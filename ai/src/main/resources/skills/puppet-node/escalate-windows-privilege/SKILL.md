@@ -2,6 +2,9 @@
 name: escalate-windows-privilege
 description: 在 Windows 目标上系统性地检测权限提升路径，包括未打补丁的内核/组件 CVE、服务配置错误、AlwaysInstallElevated、令牌滥用、UAC 绕过等。当任务涉及 Windows 提权、补丁缺失、服务劫持、令牌操作时使用。
 enabled: true
+tags:
+  - privilege-escalation
+  - windows
 ---
 
 # Windows 权限提升路径检测
