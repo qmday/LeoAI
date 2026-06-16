@@ -11,10 +11,9 @@ import java.util.Set;
  * AI 工具注册表：集中管理工具名称 → 工具类型 的映射关系，
  * 以及每个工具类型的元数据（中文标签、影响面描述、适用上下文）。
  *
- * <p>此类替代原先散落在三处的工具定义：
+ * <p>此类替代原先散落在多处的工具定义：
  * <ul>
- *   <li>{@code AgentToolInterceptor} 中的 7 个硬编码 {@code Set} 常量</li>
- *   <li>{@code UserAiPolicyService.VALID_TOOL_TYPES} 集合</li>
+ *   <li>{@code AgentToolInterceptor} 中的硬编码 {@code Set} 常量</li>
  *   <li>前端 {@code AiToolPolicySettings.vue} 的 {@code TOOL_TYPES} 数组</li>
  * </ul>
  *
@@ -180,7 +179,6 @@ public final class AiToolRegistry {
 
     /**
      * 获取所有类别 key 的集合（不可变）。
-     * 用于替代 {@code UserAiPolicyService.VALID_TOOL_TYPES}。
      */
     public static Set<String> allCategoryKeys() {
         return CATEGORY_MAP.keySet();
