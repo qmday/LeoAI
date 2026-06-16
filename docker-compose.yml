@@ -1,0 +1,25 @@
+services:
+  leoai:
+    build:
+      context: .
+      args:
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-eclipse-temurin:17-jre}
+        JAR_URL: ${JAR_URL:-https://github.com/cha0upup/LeoAI/releases/download/V0.0.2/LeoAi-0.0.2-SNAPSHOT.jar}
+        JAR_SHA256: ${JAR_SHA256:-1986285e3f0264416e533d3cca34ff05d7f29f12b2bf38ee4b61031049534dc3}
+    image: leoai:local
+    container_name: leoai
+    restart: unless-stopped
+    ports:
+      - "${LEOAI_PORT:-8082}:8082"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      LEO_PLUGIN_ENCRYPT_KEY: ${LEO_PLUGIN_ENCRYPT_KEY:-ikunikunikunikun}
+      SPRING_DATASOURCE_URL: jdbc:sqlite:/app/data/data.db
+      VFSPATH: /app/data/root
+      JAVA_OPTS: ${JAVA_OPTS:-}
+    volumes:
+      - leoai-data:/app/data
+
+volumes:
+  leoai-data:

@@ -214,6 +214,48 @@ http://localhost:8082
 
 ---
 
+### Docker 启动
+
+项目提供了 Docker 镜像，构建时直接下载 Release 页面中的 JAR 文件，不需要在本机安装 JDK/Maven，也不会在镜像内重新编译源码。运行时使用 Java 17，并自动携带必需的 `--add-opens` 参数。
+
+```bash
+docker compose up -d --build
+```
+
+启动后访问：
+
+```text
+http://localhost:8082
+```
+
+SQLite 数据库和 `root` 运行目录会持久化到 `leoai-data` volume。可通过环境变量调整端口或 AI 接口：
+
+```bash
+LEOAI_PORT=9090 OPENAI_API_KEY=your-api-key docker compose up -d --build
+```
+
+生产环境建议同时设置插件/伪装文件加密密钥：
+
+```bash
+LEO_PLUGIN_ENCRYPT_KEY=your-strong-key docker compose up -d
+```
+
+如需使用 OpenAI 兼容服务：
+
+```bash
+OPENAI_BASE_URL=https://api.deepseek.com docker compose up -d
+```
+
+如需指定其他 Release JAR：
+
+```bash
+JAR_URL=https://github.com/cha0upup/LeoAI/releases/download/V0.0.2/LeoAi-0.0.2-SNAPSHOT.jar \
+JAR_SHA256=1986285e3f0264416e533d3cca34ff05d7f29f12b2bf38ee4b61031049534dc3 \
+docker compose up -d --build
+```
+
+---
+
 ## 配置说明
 
 ### 修改端口
